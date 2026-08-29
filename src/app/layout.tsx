@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Wiki Fullstack - Next.js + MongoDB + Render",
-  description: "Plantilla fullstack en Next.js con conexión a MongoDB Atlas y configuración lista para Render.",
+  title: "Wiki SO1",
+  description: "",
 };
 
 export default function RootLayout({
