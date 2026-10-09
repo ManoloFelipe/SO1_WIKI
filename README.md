@@ -190,3 +190,60 @@ services:
   - Script inline de precarga en `<head>` para evitar parpadeos (*Flash of Unstyled Content - FOUC*).
   - Persistencia en `localStorage` con respaldo automático en `prefers-color-scheme`.
 * **Tailwind CSS v4:** Estilos atómicos con variante `@custom-variant dark (&:where(.dark, .dark *))` y tokens CSS dinámicos para transiciones visuales de color a 0.25s.
+
+---
+
+## 8. Proyecto 2 / Laboratorio II: Motor de Transacciones Concurrentes
+
+Implementación del motor en tiempo real que demuestra la sincronización de hilos reales del sistema operativo, condiciones de carrera, interbloqueos genuinos según las 4 condiciones de Coffman, y recuperación mediante el Grafo de Asignación de Recursos (RAG) con DFS.
+
+### 8.1 Componentes del Motor Python (`python_engine/`)
+* **Hilos Reales del SO (`threading.Thread`):** Cada trabajador y el guardián son hilos nativos identificables mediante su **TID** (`threading.get_native_id()`) y el **PID** del proceso (`os.getpid()`).
+* **Cuentas y Recursos:** Cuentas A, B y C con saldos en enteros e invariante de conservación $S = A + B + C = 3000$.
+* **Exclusión Mutua:** Un `threading.Lock()` exclusivo por cada cuenta para proteger las secciones críticas compuestas.
+* **Monitor Coordinador (`threading.Condition` con `threading.RLock`):** Controla el registro de propietarios y esperas de forma atómica y consistente, permitiendo esperas cancelables sin bloquear el monitor.
+* **Grafo de Asignación de Recursos (RAG):** Representación dirigida de posesión ($R \rightarrow T$) y de espera ($T \rightarrow R$).
+* **Detección de Ciclos por DFS:** Búsqueda en profundidad sobre listas de adyacencia para identificar el ciclo $T1 \rightarrow B \rightarrow T2 \rightarrow A \rightarrow T1$ y resaltar las aristas en rojo en el frontend SVG.
+* **Cancelación Cooperativa de Víctima:** El guardián notifica a T2 vía la `Condition`. T2 despierta, retira su solicitud y libera su propio lock de B en su bloque `finally`. T1 completa su operación y el saldo se conserva intacto en 3000.
+
+### 8.2 Escenarios de Demostración
+1. **Modo Normal:** Transferencias concurrentes siguiendo un orden alfabético estricto de adquisición (A antes que B, B antes que C). Previene esperas circulares.
+2. **Condición de Carrera Controlada:**
+   * *Desprotegida:* Una `threading.Barrier(2)` sincroniza a T1 y T2 para que ambos lean $A = 1000$ antes de escribir. Una escritura sobrescribe a la otra, y la suma total pasa a 3100 o 3200 (invariante roto).
+   * *Protegida:* Con locks ordenados, se garantiza exclusión mutua, $A = 700$ y el total se conserva en 3000.
+3. **Interbloqueo Caótico (Coffman):** T1 retiene A y pide B; T2 retiene B y pide A. Sincronizado con `Barrier(2)` tras el primer lock. Detección automática del ciclo por DFS.
+4. **Recuperación Cooperativa:** Guardián cancela a T2, T2 libera B en `finally`, T1 termina, ciclo desaparece y $S = 3000$.
+
+### 8.3 Ejecución del Motor Concurrente
+Para ejecutar el servidor localmente o en un servidor Linux/Azure:
+```bash
+# Iniciar servidor backend en Python (puerto 8000)
+npm run engine
+# O directamente:
+py python_engine/server.py
+```
+
+Para ejecutar la suite de pruebas CLI del motor:
+```bash
+npm run engine:test
+# O directamente:
+py -u python_engine/test_cli.py
+```
+
+### 8.4 Comandos de Evidencia en Linux / Azure
+Durante la ejecución del servidor o cuando se inyecta el interbloqueo, se puede comprobar la presencia de hilos reales del SO con los siguientes comandos en la terminal de Linux (sustituyendo `<PID>` por el PID observado en la interfaz):
+```bash
+# Listar todos los hilos nativos y sus TIDs
+ps -L -p <PID>
+
+# Inspeccionar las tareas del kernel de Linux
+ls -l /proc/<PID>/task
+
+# Monitorear hilos en tiempo real
+top -H -p <PID>
+```
+En Windows (PowerShell):
+```powershell
+Get-Process -Id <PID> | Select-Object -ExpandProperty Threads
+```
+

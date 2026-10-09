@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "engine": "py python_engine/server.py",
+    "engine:test": "py python_engine/test_cli.py"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4",

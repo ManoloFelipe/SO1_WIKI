@@ -10,7 +10,8 @@ import {
   RefreshCw,
   PlusCircle,
   ArrowRight,
-  Boxes,
+  GitBranch,
+  AlertTriangle,
   Activity,
 } from "lucide-react";
 
@@ -182,11 +183,20 @@ export default function Home() {
 
             <div className="flex flex-wrap items-center gap-3">
               <Link
+                href="/concurrency"
+                className="inline-flex items-center px-5 py-3 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-600/20 hover:scale-[1.02]"
+              >
+                <GitBranch className="w-4 h-4 mr-2" />
+                Motor Concurrente (Hilos SO)
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+
+              <Link
                 href="/memory-simulator"
                 className="inline-flex items-center px-5 py-3 rounded-xl text-sm font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-all shadow-md shadow-cyan-600/20 hover:scale-[1.02]"
               >
                 <Cpu className="w-4 h-4 mr-2" />
-                Abrir Simulador de Memoria RAM
+                Simulador RAM (1024 MB)
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
 
@@ -201,14 +211,46 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Sección de Diagnóstico y Prueba Rápida de Base de Datos, proximamente, parte de modulo de administrador */}
+        {/* Sección de Diagnóstico y Prueba Rápida de Base de Datos */}
         <section id="seccion-bd" className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center space-x-2">
               <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 Prueba de Conexión & CRUD (MongoDB Atlas)
               </h2>
+            </div>
+
+            {/* Estado de conexión con Atlas */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
+                  status?.connected
+                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
+                    : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                }`}
+              >
+                {status?.connected ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Conectado: {status.databaseName} ({status.latencyMs}ms)</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{loadingStatus ? "Verificando..." : "Sin conexión a Atlas"}</span>
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={checkStatus}
+                disabled={loadingStatus}
+                className="p-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+                title="Comprobar ping de base de datos"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingStatus ? "animate-spin" : ""}`} />
+              </button>
             </div>
           </div>
 

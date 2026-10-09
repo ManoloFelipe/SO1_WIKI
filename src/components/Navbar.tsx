@@ -9,7 +9,7 @@ import {
   Home,
   CheckCircle2,
   AlertCircle,
-  RefreshCw,
+  GitBranch,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -83,17 +83,31 @@ export default function Navbar() {
               Inicio
             </Link>
             <Link
+              href="/concurrency"
+              className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                pathname === "/concurrency"
+                  ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-900"
+              }`}
+            >
+              <GitBranch className="w-3.5 h-3.5 mr-1.5 text-indigo-500" />
+              Motor Concurrente
+              <span className="ml-1.5 text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-semibold">
+                Lab II
+              </span>
+            </Link>
+            <Link
               href="/memory-simulator"
               className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 pathname === "/memory-simulator"
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-900"
               }`}
             >
               <Cpu className="w-3.5 h-3.5 mr-1.5 text-cyan-500" />
               Simulador RAM
               <span className="ml-1.5 text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 font-semibold">
-                SO
+                RAM
               </span>
             </Link>
           </nav>
@@ -101,7 +115,43 @@ export default function Navbar() {
 
         {/* Controles del lado derecho */}
         <div className="flex items-center space-x-3">
-          
+          {/* Badge de conexión a MongoDB Atlas */}
+          {!loadingStatus && (
+            <div
+              className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+                status?.connected
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
+                  : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+              }`}
+              title={
+                status?.connected
+                  ? `MongoDB Atlas Conectado (${status.latencyMs ?? "?"}ms)`
+                  : "MongoDB Atlas Desconectado"
+              }
+            >
+              {status?.connected ? (
+                <>
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                  <span>Atlas ({status.latencyMs}ms)</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-3 h-3 text-amber-500" />
+                  <span>Atlas Desconectado</span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Enlace móvil a motor concurrente */}
+          <Link
+            href="/concurrency"
+            className="sm:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400"
+            title="Motor Concurrente"
+          >
+            <GitBranch className="w-4 h-4" />
+          </Link>
+
           {/* Enlace móvil a simulador */}
           <Link
             href="/memory-simulator"
