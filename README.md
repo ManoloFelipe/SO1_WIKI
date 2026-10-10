@@ -1,16 +1,18 @@
 # Documentación Técnica de la Arquitectura del Sistema
 
-**Proyecto:** Wiki & Simulador de Gestión de Procesos y Memoria RAM  
-**Stack Principal:** Next.js (App Router, React 19, TypeScript) • MongoDB Atlas • Render PaaS • Tailwind CSS v4  
-**Entorno de Producción:** Despliegue continuo en Render Web Service
+**Proyecto:** Wiki & Simulador de Sistemas Operativos (Gestión de Memoria RAM y Concurrencia)  
+**Stack Principal:** Next.js (App Router, React 19, TypeScript) • MongoDB Atlas • Render PaaS • Python 3 • Tailwind CSS v4  
+**Despliegue en Producción:** [https://www.mfelipe.tech/wiki](https://www.mfelipe.tech/wiki)  
+**Entorno de Alojamiento:** Render Web Service con subruta configurada (`/wiki`)
 
 ---
 
 ## 1. Visión General y Objetivos Técnicos
 
-Esta aplicación es una plataforma web fullstack modular diseñada con fines académicos y de producción, orientada a dos propósitos principales:
-1. **Simulación en Tiempo Real de Gestión de Memoria y Procesos de Sistemas Operativos:** Implementación interactiva de un modelo de asignación contigua de RAM (1024 MB) con algoritmos First-Fit, Best-Fit y Worst-Fit, planificación de cola FIFO y control de fragmentación externa.
-2. **Capa de Backend y Persistencia en la Nube:** API REST modular construida sobre Route Handlers de Next.js, conectada a una base de datos NoSQL distribuida (**MongoDB Atlas**) mediante un patrón de conexión Singleton para optimizar el pool de sockets en entornos cloud.
+Esta aplicación es una plataforma web fullstack modular diseñada con fines académicos y de producción para la cátedra de Sistemas Operativos, orientada a tres componentes fundamentales:
+1. **Wiki y Capa de Persistencia NoSQL (MongoDB Atlas):** Base de conocimientos colaborativa y API REST modular construida sobre Route Handlers de Next.js, conectada a MongoDB Atlas mediante un patrón Singleton de conexión que optimiza el pool de sockets en entornos cloud.
+2. **Simulación en Tiempo Real de Gestión de Memoria y Procesos (Laboratorio I):** Implementación interactiva de un modelo de asignación contigua de RAM (1024 MB) con algoritmos First-Fit, Best-Fit y Worst-Fit, planificación con cola FIFO y cálculo dinámico de fragmentación externa.
+3. **Motor de Transacciones Concurrentes y Detección de Deadlock (Laboratorio II):** Demostración en tiempo real con backend multihilo en Python utilizando hilos nativos del sistema operativo (TIDs), sincronización mediante Locks y Monitor Condition, visualización del Grafo de Asignación de Recursos (RAG), detección de ciclos por DFS y recuperación cooperativa frente a interbloqueos de Coffman.
 
 ---
 
@@ -180,6 +182,16 @@ services:
 * **Inclusión de dependencias de construcción:** Con `NODE_ENV=production`, `npm install` excluye por defecto las herramientas de desarrollo. El comando `npm install --include=dev` y la reubicación de `@tailwindcss/postcss`, `tailwindcss` y `typescript` en el bloque principal de dependencias garantizan compilaciones limpias y reproducibles en los contenedores de Render.
 * **Detección Dinámica de Puertos:** El servidor Next.js en producción enlaza automáticamente el puerto provisto en la variable de entorno `PORT` inyectada dinámicamente por la infraestructura de Render.
 
+### 6.3 Dominio en Producción y Enrutamiento Base (`basePath`)
+* **URL Pública Oficial:** [https://www.mfelipe.tech/wiki](https://www.mfelipe.tech/wiki)
+* **Configuración de Subruta (`basePath`):** Para servir la aplicación dentro del path unificado `/wiki` del dominio corporativo, `next.config.ts` declara explícitamente:
+  ```typescript
+  const nextConfig: NextConfig = {
+    basePath: "/wiki",
+  };
+  ```
+  Esto garantiza que todos los assets estáticos, bundles de scripts, fuentes tipográficas y rutas internas de la API REST se sirvan con el prefijo `/wiki` de forma transparente.
+
 ---
 
 ## 7. Frontend, Estado y Sistema de Diseño
@@ -246,4 +258,12 @@ En Windows (PowerShell):
 ```powershell
 Get-Process -Id <PID> | Select-Object -ExpandProperty Threads
 ```
+
+---
+
+## 9. Disclaimer / Aviso
+
+> 🤖 **Nota de autoría y herramientas:**  
+> Este proyecto fue desarrollado y estructurado con el apoyo de **Google Antigravity** como asistente y entorno avanzado de inteligencia artificial para la generación de código, diseño arquitectónico y optimización de software.
+
 
