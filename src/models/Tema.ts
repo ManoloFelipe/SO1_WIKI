@@ -1,10 +1,12 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-// Un tema teórico de la Wiki (solo texto), organizado por unidad.
+// Un tema o contenido de la Wiki creado por el administrador dentro de un separador/unidad.
 export interface ITema extends Document {
   title: string;
   unit: number;
+  separadorId?: string | null;
   content: string;
+  imageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,19 +22,32 @@ const TemaSchema: Schema<ITema> = new Schema(
     unit: {
       type: Number,
       required: [true, "La unidad es obligatoria"],
-      min: [1, "La unidad debe ser de 1 a 3"],
-      max: [3, "La unidad debe ser de 1 a 3"],
+      default: 1,
+      min: [1, "La unidad debe ser mayor o igual a 1"],
+    },
+    separadorId: {
+      type: String,
+      default: null,
+      index: true,
     },
     content: {
       type: String,
       required: [true, "El contenido es obligatorio"],
       trim: true,
     },
+    imageUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   },
   { timestamps: true }
 );
 
-const Tema: Model<ITema> =
-  mongoose.models.Tema || mongoose.model<ITema>("Tema", TemaSchema);
+if (mongoose.models.Tema) {
+  delete mongoose.models.Tema;
+}
+
+const Tema: Model<ITema> = mongoose.model<ITema>("Tema", TemaSchema);
 
 export default Tema;

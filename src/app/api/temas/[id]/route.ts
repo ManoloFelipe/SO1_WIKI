@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { isAdmin } from "@/lib/adminAuth";
 import Tema from "@/models/Tema";
+import Separador from "@/models/Separador";
 
 export const dynamic = "force-dynamic";
 
@@ -30,15 +31,31 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
   try {
     await connectToDatabase();
     const { id } = await params;
-    const { title, unit, content } = await request.json();
+    const { title, unit, separadorId, content, imageUrl = "" } = await request.json();
+
+    let resolvedUnit = Number(unit) || 1;
+    if (separadorId) {
+      const sep = await Separador.findById(separadorId).lean();
+      if (sep) {
+        resolvedUnit = sep.order;
+      }
+    }
+
     const tema = await Tema.findByIdAndUpdate(
       id,
-      { title, unit, content },
+      {
+        title,
+        unit: resolvedUnit,
+        separadorId: separadorId || null,
+        content,
+        imageUrl,
+      },
       { new: true, runValidators: true }
     );
     return tema ? NextResponse.json({ success: true, data: tema }) : notFound();
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Error al editar el tema";
+    const message =
+      error instanceof Error ? error.message : "Error al editar el tema";
     return NextResponse.json({ success: false, error: message }, { status: 400 });
   }
 }
