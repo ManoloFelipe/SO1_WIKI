@@ -6,13 +6,13 @@ import { useEffect, useState } from "react";
 import {
   Layers,
   Cpu,
-  Home,
   CheckCircle2,
   AlertCircle,
   GitBranch,
   BookOpen,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { apiPath } from "@/lib/wikiStyles";
 
 interface StatusData {
   connected: boolean;
@@ -29,7 +29,7 @@ export default function Navbar() {
     let ignore = false;
     async function checkDb() {
       try {
-        const res = await fetch("/api/status");
+        const res = await fetch(apiPath("/api/status"));
         const data = await res.json();
         if (!ignore) {
           setStatus(data);
@@ -75,18 +75,7 @@ export default function Navbar() {
             <Link
               href="/"
               className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                pathname === "/"
-                  ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-900"
-              }`}
-            >
-              <Home className="w-3.5 h-3.5 mr-1.5" />
-              Inicio
-            </Link>
-            <Link
-              href="/wiki"
-              className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                pathname.startsWith("/wiki")
+                pathname === "/" || pathname.startsWith("/wiki")
                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-900"
               }`}

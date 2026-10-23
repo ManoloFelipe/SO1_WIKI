@@ -21,9 +21,11 @@ import Navbar from "@/components/Navbar";
 import {
   FONT_FAMILY_OPTIONS,
   FONT_SIZE_OPTIONS,
+  apiPath,
   getFontFamilyCss,
   getFontSizeClasses,
   getSeparadorCardStyle,
+  resolveImageUrl,
   type SeparadorItem,
   type TemaItem,
 } from "@/lib/wikiStyles";
@@ -111,9 +113,9 @@ export default function AdminPage() {
 
   const cargarTodo = useCallback(async () => {
     const [sepRes, temaRes, upRes] = await Promise.all([
-      fetch("/api/separadores").then((r) => r.json()).catch(() => ({ success: false })),
-      fetch("/api/temas").then((r) => r.json()).catch(() => ({ success: false })),
-      fetch("/api/uploads").then((r) => r.json()).catch(() => ({ success: false })),
+      fetch(apiPath("/api/separadores")).then((r) => r.json()).catch(() => ({ success: false })),
+      fetch(apiPath("/api/temas")).then((r) => r.json()).catch(() => ({ success: false })),
+      fetch(apiPath("/api/uploads")).then((r) => r.json()).catch(() => ({ success: false })),
     ]);
 
     if (sepRes.success && Array.isArray(sepRes.data)) {
@@ -141,7 +143,7 @@ export default function AdminPage() {
   async function login(e: React.FormEvent) {
     e.preventDefault();
     setLoginError("");
-    const res = await fetch("/api/admin/login", {
+    const res = await fetch(apiPath("/api/admin/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
@@ -171,7 +173,7 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/uploads", {
+      const res = await fetch(apiPath("/api/uploads"), {
         method: "POST",
         headers: { "x-admin-password": password },
         body: formData,
@@ -209,7 +211,9 @@ export default function AdminPage() {
     setSepSaving(true);
     setSepMsg("");
     const res = await fetch(
-      sepEditId ? `/api/separadores/${sepEditId}` : "/api/separadores",
+      sepEditId
+        ? apiPath(`/api/separadores/${sepEditId}`)
+        : apiPath("/api/separadores"),
       {
         method: sepEditId ? "PUT" : "POST",
         headers: {
@@ -262,7 +266,7 @@ export default function AdminPage() {
       )
     )
       return;
-    const res = await fetch(`/api/separadores/${id}`, {
+    const res = await fetch(apiPath(`/api/separadores/${id}`), {
       method: "DELETE",
       headers: { "x-admin-password": password },
     });
@@ -295,7 +299,7 @@ export default function AdminPage() {
     const unitNum = sepSeleccionado ? sepSeleccionado.order : 1;
 
     const res = await fetch(
-      temaEditId ? `/api/temas/${temaEditId}` : "/api/temas",
+      temaEditId ? apiPath(`/api/temas/${temaEditId}`) : apiPath("/api/temas"),
       {
         method: temaEditId ? "PUT" : "POST",
         headers: {
@@ -323,7 +327,7 @@ export default function AdminPage() {
   }
 
   async function editarTema(id: string) {
-    const d = await fetch(`/api/temas/${id}`).then((r) => r.json());
+    const d = await fetch(apiPath(`/api/temas/${id}`)).then((r) => r.json());
     if (d.success && d.data) {
       setTemaEditId(id);
       setTemaTitle(d.data.title);
@@ -343,7 +347,7 @@ export default function AdminPage() {
 
   async function borrarTema(id: string, nombre: string) {
     if (!confirm(`¿Borrar el tema "${nombre}"?`)) return;
-    const res = await fetch(`/api/temas/${id}`, {
+    const res = await fetch(apiPath(`/api/temas/${id}`), {
       method: "DELETE",
       headers: { "x-admin-password": password },
     });
@@ -757,7 +761,7 @@ export default function AdminPage() {
                   <div className="h-44 w-full overflow-hidden bg-slate-950/30 relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={sepImageUrl}
+                      src={resolveImageUrl(sepImageUrl)}
                       alt={sepTitle || "Vista previa"}
                       className="w-full h-full object-cover"
                     />

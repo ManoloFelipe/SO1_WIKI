@@ -110,3 +110,25 @@ export function getSeparadorCardStyle(sep: Partial<SeparadorItem>): CSSPropertie
     borderColor: sep.accentColor || "#10b981",
   };
 }
+
+const BASE_PATH = "/wiki";
+
+/**
+ * Prefija las rutas de API con el `basePath` configurado en `next.config.ts` (`/wiki`).
+ */
+export function apiPath(route: string): string {
+  const clean = route.startsWith("/") ? route : `/${route}`;
+  if (clean.startsWith(`${BASE_PATH}/`)) return clean;
+  return `${BASE_PATH}${clean}`;
+}
+
+/**
+ * Normaliza la URL de una imagen subida para incluir el `basePath` (`/wiki/api/uploads/...`).
+ */
+export function resolveImageUrl(url?: string): string {
+  if (!url) return "";
+  if (url.startsWith("/api/uploads/")) {
+    return `${BASE_PATH}${url}`;
+  }
+  return url;
+}

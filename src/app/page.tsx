@@ -1,387 +1,384 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
+import {
+  BookOpen,
+  ArrowRight,
+  ArrowLeft,
+  Layers,
+  Settings,
+  ExternalLink,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import {
-  Database,
-  Cpu,
-  CheckCircle2,
-  RefreshCw,
-  PlusCircle,
-  ArrowRight,
-  GitBranch,
-  AlertTriangle,
-  Activity,
-} from "lucide-react";
+  apiPath,
+  getFontFamilyCss,
+  getFontSizeClasses,
+  getSeparadorCardStyle,
+  resolveImageUrl,
+  type SeparadorItem,
+  type TemaItem,
+} from "@/lib/wikiStyles";
 
-interface StatusData {
-  connected: boolean;
-  databaseName?: string;
-  latencyMs?: number;
-  message?: string;
-  error?: string;
-}
-
-interface ItemData {
-  _id: string;
-  title: string;
-  content: string;
-  category: string;
-  createdAt: string;
-}
-
-export default function Home() {
-  const [status, setStatus] = useState<StatusData | null>(null);
-  const [loadingStatus, setLoadingStatus] = useState<boolean>(true);
-  const [items, setItems] = useState<ItemData[]>([]);
-  const [loadingItems, setLoadingItems] = useState<boolean>(false);
-
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [category, setCategory] = useState("General");
-  const [formError, setFormError] = useState<string | null>(null);
-  const [formSuccess, setFormSuccess] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  const fetchItems = async () => {
-    setLoadingItems(true);
-    try {
-      const res = await fetch("/api/items");
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        setItems(json.data);
-      }
-    } catch (err) {
-      console.error("Error al cargar ítems:", err);
-    } finally {
-      setLoadingItems(false);
-    }
-  };
-
-  const checkStatus = async () => {
-    setLoadingStatus(true);
-    try {
-      const res = await fetch("/api/status");
-      const data = await res.json();
-      setStatus(data);
-      if (data.connected) {
-        fetchItems();
-      }
-    } catch {
-      setStatus({
-        connected: false,
-        error: "Error de red al consultar el estado de la API",
-      });
-    } finally {
-      setLoadingStatus(false);
-    }
-  };
+export default function HomeWikiPage() {
+  const [separadores, setSeparadores] = useState<SeparadorItem[]>([]);
+  const [temas, setTemas] = useState<TemaItem[]>([]);
+  const [selectedSep, setSelectedSep] = useState<SeparadorItem | null>(null);
+  const [selectedTemaId, setSelectedTemaId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    let ignore = false;
-
-    async function initialize() {
-      try {
-        const res = await fetch("/api/status");
-        const data = await res.json();
-        if (ignore) return;
-        setStatus(data);
-
-        if (data.connected) {
-          const itemsRes = await fetch("/api/items");
-          const json = await itemsRes.json();
-          if (ignore) return;
-          if (json.success && Array.isArray(json.data)) {
-            setItems(json.data);
-          }
+    Promise.all([
+      fetch(apiPath("/api/separadores")).then((r) => r.json()),
+      fetch(apiPath("/api/temas")).then((r) => r.json()),
+    ])
+      .then(([sepRes, temaRes]) => {
+        if (sepRes.success) {
+          setSeparadores(sepRes.data);
+        } else {
+          setError(sepRes.error || "Error al cargar los separadores");
         }
-      } catch {
-        if (!ignore) {
-          setStatus({
-            connected: false,
-            error: "Error de red al consultar el estado de la API",
-          });
+        if (temaRes.success) {
+          setTemas(temaRes.data);
         }
-      } finally {
-        if (!ignore) {
-          setLoadingStatus(false);
-        }
-      }
-    }
-
-    initialize();
-
-    return () => {
-      ignore = true;
-    };
+      })
+      .catch(() => setError("No se pudo conectar con el servidor"))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleCreateItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    setFormSuccess(null);
-
-    if (!title.trim() || !content.trim()) {
-      setFormError("Por favor completa el título y el contenido.");
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        const res = await fetch("/api/items", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, content, category }),
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          setFormSuccess("¡Registro guardado con éxito!");
-          setTitle("");
-          setContent("");
-          fetchItems();
-        } else {
-          setFormError(data.error || "No se pudo guardar el elemento.");
-        }
-      } catch {
-        setFormError("Error de conexión al enviar el formulario.");
-      }
-    });
-  };
+  const temasDeSeparador = (sep: SeparadorItem) =>
+    temas.filter(
+      (t) =>
+        t.separadorId === sep._id || (!t.separadorId && t.unit === sep.order)
+    );
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
       <Navbar />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-10 space-y-8">
-        {/* Banner Principal "En Desarrollo" */}
-        <section className="relative overflow-hidden border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-10 bg-white dark:bg-slate-900/60 shadow-sm dark:shadow-xl backdrop-blur-md">
-          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-cyan-500/10 dark:bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-64 h-64 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="max-w-3xl relative z-10">
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span>En Desarrollo Activo</span>
-              </span>
-              <span className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Desplegado en Render</span>
-              </span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-4">
+        {/* Cabecera Principal */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+              <BookOpen className="w-8 h-8 text-emerald-500 shrink-0" />
               Wiki Sistemas Operativos 1
             </h1>
-
-            <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed mb-8">
-              Aplicación web construida con <strong>Next.js (App Router)</strong>, base de datos en{" "}
-              <strong>MongoDB Atlas</strong>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+              {selectedSep
+                ? `Explorando los contenidos de: ${selectedSep.title}`
+                : "Selecciona una unidad o separador para leer los contenidos teóricos generados por el administrador."}
             </p>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/concurrency"
-                className="inline-flex items-center px-5 py-3 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-600/20 hover:scale-[1.02]"
-              >
-                <GitBranch className="w-4 h-4 mr-2" />
-                Motor Concurrente (Hilos SO)
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-
-              <Link
-                href="/memory-simulator"
-                className="inline-flex items-center px-5 py-3 rounded-xl text-sm font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-all shadow-md shadow-cyan-600/20 hover:scale-[1.02]"
-              >
-                <Cpu className="w-4 h-4 mr-2" />
-                Simulador RAM (1024 MB)
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-
-              <a
-                href="#seccion-bd"
-                className="inline-flex items-center px-4 py-3 rounded-xl text-sm font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors"
-              >
-                <Database className="w-4 h-4 mr-2 text-emerald-500" />
-                Probar Base de Datos
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* Sección de Diagnóstico y Prueba Rápida de Base de Datos */}
-        <section id="seccion-bd" className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center space-x-2">
-              <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Prueba de Conexión & CRUD (MongoDB Atlas)
-              </h2>
-            </div>
-
-            {/* Estado de conexión con Atlas */}
-            <div className="flex items-center gap-2">
-              <div
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
-                  status?.connected
-                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
-                    : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
-                }`}
-              >
-                {status?.connected ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Conectado: {status.databaseName} ({status.latencyMs}ms)</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{loadingStatus ? "Verificando..." : "Sin conexión a Atlas"}</span>
-                  </>
-                )}
-              </div>
-
-              <button
-                onClick={checkStatus}
-                disabled={loadingStatus}
-                className="p-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
-                title="Comprobar ping de base de datos"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingStatus ? "animate-spin" : ""}`} />
-              </button>
-            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Formulario */}
-            <div className="lg:col-span-5 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/60 p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1 flex items-center">
-                <PlusCircle className="w-4 h-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
-                Guardar Nuevo Registro
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Envía un documento a la colección en MongoDB.
-              </p>
+          <Link
+            href="/admin"
+            className="inline-flex items-center self-start sm:self-auto px-3.5 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 text-slate-700 dark:text-slate-300 transition-colors"
+          >
+            <Settings className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
+            Administrar Wiki
+          </Link>
+        </div>
 
-              <form onSubmit={handleCreateItem} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Título
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ej. Tarea 1 - Sistemas Operativos"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
+        {loading && (
+          <div className="p-12 text-center text-sm text-slate-500">
+            Cargando unidades y contenidos...
+          </div>
+        )}
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Categoría
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="General">General</option>
-                    <option value="Sistemas Operativos">Sistemas Operativos</option>
-                    <option value="Memoria">Memoria RAM</option>
-                    <option value="Notas">Notas de Clase</option>
-                  </select>
-                </div>
+        {error && (
+          <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-sm text-amber-600 dark:text-amber-400">
+            {error}
+          </div>
+        )}
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Contenido
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Escribe una breve descripción..."
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 resize-none"
-                  />
-                </div>
+        {!loading && !error && separadores.length === 0 && (
+          <div className="border border-dashed border-slate-300 dark:border-slate-800 rounded-3xl p-10 text-center space-y-3">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Aún no hay separadores ni unidades publicadas.
+            </p>
+            <Link
+              href="/admin"
+              className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+            >
+              Crear primer separador en /admin
+            </Link>
+          </div>
+        )}
 
-                {formError && (
-                  <div className="text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 p-2.5 rounded-lg">
-                    {formError}
-                  </div>
-                )}
+        {/* ────────────── VISTA 1: CARDS DE SEPARADORES (UNIDADES) ────────────── */}
+        {!loading && !error && !selectedSep && separadores.length > 0 && (
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {separadores.map((sep) => {
+              const lista = temasDeSeparador(sep);
+              const sizeClasses = getFontSizeClasses(sep.fontSize);
 
-                {formSuccess && (
-                  <div className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-2.5 rounded-lg">
-                    {formSuccess}
-                  </div>
-                )}
-
+              return (
                 <button
-                  type="submit"
-                  disabled={isPending}
-                  className="w-full py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 flex items-center justify-center"
+                  key={sep._id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedSep(sep);
+                    setSelectedTemaId(lista[0]?._id || null);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  style={getSeparadorCardStyle(sep)}
+                  className="group text-left rounded-3xl border-2 overflow-hidden shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-1 flex flex-col justify-between cursor-pointer"
                 >
-                  {isPending ? "Guardando..." : "Guardar en MongoDB"}
-                </button>
-              </form>
-            </div>
+                  <div className="w-full">
+                    {sep.imageUrl ? (
+                      <div className="h-48 w-full overflow-hidden bg-slate-950/20 relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={resolveImageUrl(sep.imageUrl)}
+                          alt={sep.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          background: `linear-gradient(135deg, ${sep.accentColor}33, ${sep.bgColor})`,
+                        }}
+                        className="h-36 w-full flex items-center justify-center border-b border-white/10"
+                      >
+                        <Layers
+                          style={{ color: sep.accentColor }}
+                          className="w-12 h-12 opacity-80 group-hover:scale-110 transition-transform"
+                        />
+                      </div>
+                    )}
 
-            {/* Lista de Registros */}
-            <div className="lg:col-span-7 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/60 p-5 shadow-sm flex flex-col">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Registros Guardados ({items.length})
-                </h3>
-                <button
-                  onClick={fetchItems}
-                  disabled={loadingItems}
-                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center"
-                >
-                  <RefreshCw className={`w-3 h-3 mr-1 ${loadingItems ? "animate-spin" : ""}`} />
-                  Refrescar
-                </button>
-              </div>
+                    <div className="p-6 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          style={{
+                            backgroundColor: `${sep.accentColor}22`,
+                            color: sep.accentColor,
+                            borderColor: `${sep.accentColor}55`,
+                          }}
+                          className="text-xs font-bold px-3 py-1 rounded-full border"
+                        >
+                          Unidad {sep.order}
+                        </span>
 
-              <div className="flex-1 overflow-y-auto max-h-[300px] space-y-2.5 pr-1">
-                {loadingItems ? (
-                  <div className="p-8 text-center text-xs text-slate-400">Cargando datos...</div>
-                ) : items.length > 0 ? (
-                  items.map((item) => (
-                    <div
-                      key={item._id}
-                      className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                          {item.title}
-                        </h4>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                          {item.category}
+                        <span className="text-xs opacity-75 font-medium">
+                          {lista.length} {lista.length === 1 ? "tema" : "temas"}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mb-1.5">
-                        {item.content}
-                      </p>
-                      <div className="text-[10px] text-slate-400 font-mono">
-                        {new Date(item.createdAt).toLocaleString()}
-                      </div>
+
+                      <h2 className={`font-extrabold ${sizeClasses.titleClass}`}>
+                        {sep.title}
+                      </h2>
+
+                      {sep.description && (
+                        <p className={`opacity-85 line-clamp-3 ${sizeClasses.bodyClass}`}>
+                          {sep.description}
+                        </p>
+                      )}
                     </div>
-                  ))
-                ) : (
-                  <div className="p-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      No hay registros guardados en MongoDB todavía.
-                    </p>
+                  </div>
+
+                  <div className="px-6 py-4 border-t border-white/10 bg-black/10 flex items-center justify-between w-full">
+                    <span className="text-xs font-semibold">
+                      Seleccionar y leer contenidos
+                    </span>
+                    <ArrowRight
+                      style={{ color: sep.accentColor }}
+                      className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </section>
+        )}
+
+        {/* ────────────── VISTA 2: CONTENIDOS DEL SEPARADOR SELECCIONADO ────────────── */}
+        {selectedSep && (
+          <div className="space-y-6">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedSep(null);
+                setSelectedTemaId(null);
+              }}
+              className="inline-flex items-center text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-emerald-500 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+              Volver a todas las unidades / separadores
+            </button>
+
+            {/* Cabecera personalizada de la unidad seleccionada */}
+            <div
+              style={getSeparadorCardStyle(selectedSep)}
+              className="rounded-3xl border-2 overflow-hidden shadow-lg"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-12">
+                {selectedSep.imageUrl && (
+                  <div className="md:col-span-4 h-56 md:h-auto overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={resolveImageUrl(selectedSep.imageUrl)}
+                      alt={selectedSep.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 )}
+                <div
+                  className={`p-6 sm:p-8 flex flex-col justify-center space-y-3 ${
+                    selectedSep.imageUrl ? "md:col-span-8" : "md:col-span-12"
+                  }`}
+                >
+                  <div>
+                    <span
+                      style={{
+                        backgroundColor: `${selectedSep.accentColor}22`,
+                        color: selectedSep.accentColor,
+                        borderColor: `${selectedSep.accentColor}55`,
+                      }}
+                      className="inline-block text-xs font-bold px-3 py-1 rounded-full border"
+                    >
+                      Unidad {selectedSep.order}
+                    </span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold">
+                    {selectedSep.title}
+                  </h2>
+                  {selectedSep.description && (
+                    <p className="text-sm sm:text-base opacity-90 leading-relaxed">
+                      {selectedSep.description}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* Datos / Temas generados por el admin dentro de esta división */}
+            {(() => {
+              const lista = temasDeSeparador(selectedSep);
+              const sizeClasses = getFontSizeClasses(selectedSep.fontSize);
+
+              if (lista.length === 0) {
+                return (
+                  <div className="border border-dashed border-slate-300 dark:border-slate-800 rounded-3xl p-10 text-center text-sm text-slate-500">
+                    El administrador aún no ha agregado temas dentro de este
+                    separador.
+                  </div>
+                );
+              }
+
+              const activeTema =
+                lista.find((t) => t._id === selectedTemaId) || lista[0];
+
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Índice lateral de temas de esta unidad */}
+                  <aside className="lg:col-span-4 space-y-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
+                      Temas de esta unidad ({lista.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {lista.map((t, idx) => {
+                        const isSelected = activeTema?._id === t._id;
+                        return (
+                          <button
+                            key={t._id}
+                            type="button"
+                            onClick={() => setSelectedTemaId(t._id)}
+                            style={
+                              isSelected
+                                ? {
+                                    borderColor: selectedSep.accentColor,
+                                    fontFamily: getFontFamilyCss(
+                                      selectedSep.fontFamily
+                                    ),
+                                  }
+                                : {
+                                    fontFamily: getFontFamilyCss(
+                                      selectedSep.fontFamily
+                                    ),
+                                  }
+                            }
+                            className={`w-full text-left px-4 py-3.5 rounded-2xl border transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                              isSelected
+                                ? "bg-white dark:bg-slate-900 border-2 shadow-sm font-bold text-slate-900 dark:text-white"
+                                : "bg-white/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400"
+                            }`}
+                          >
+                            <span className="text-sm line-clamp-2">
+                              {idx + 1}. {t.title}
+                            </span>
+                            <ArrowRight
+                              style={
+                                isSelected
+                                  ? { color: selectedSep.accentColor }
+                                  : undefined
+                              }
+                              className="w-4 h-4 shrink-0 opacity-70"
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </aside>
+
+                  {/* Lectura completa del tema seleccionado con el estilo del separador */}
+                  {activeTema && (
+                    <article
+                      style={getSeparadorCardStyle(selectedSep)}
+                      className="lg:col-span-8 rounded-3xl border-2 p-6 sm:p-8 shadow-md space-y-6"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+                        <span
+                          style={{
+                            backgroundColor: `${selectedSep.accentColor}22`,
+                            color: selectedSep.accentColor,
+                            borderColor: `${selectedSep.accentColor}55`,
+                          }}
+                          className="text-xs font-bold px-3 py-1 rounded-full border"
+                        >
+                          {selectedSep.title}
+                        </span>
+
+                        <Link
+                          href={`/wiki/${activeTema._id}`}
+                          className="inline-flex items-center text-xs opacity-75 hover:opacity-100 underline"
+                        >
+                          Abrir en vista individual
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </Link>
+                      </div>
+
+                      <h3 className="text-2xl sm:text-3xl font-extrabold">
+                        {activeTema.title}
+                      </h3>
+
+                      {activeTema.imageUrl && (
+                        <div className="rounded-2xl overflow-hidden border border-white/10 max-h-96">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={resolveImageUrl(activeTema.imageUrl)}
+                            alt={activeTema.title}
+                            className="w-full h-full object-contain bg-black/20"
+                          />
+                        </div>
+                      )}
+
+                      <div
+                        className={`whitespace-pre-wrap opacity-95 ${sizeClasses.bodyClass}`}
+                      >
+                        {activeTema.content}
+                      </div>
+                    </article>
+                  )}
+                </div>
+              );
+            })()}
           </div>
-        </section>
+        )}
       </main>
     </div>
   );

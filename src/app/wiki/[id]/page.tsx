@@ -5,6 +5,7 @@ import { use, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import {
+  apiPath,
   getFontSizeClasses,
   getSeparadorCardStyle,
   type SeparadorItem,
@@ -24,8 +25,8 @@ export default function TemaPage({
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/temas/${id}`).then((r) => r.json()),
-      fetch("/api/separadores").then((r) => r.json()),
+      fetch(apiPath(`/api/temas/${id}`)).then((r) => r.json()),
+      fetch(apiPath("/api/separadores")).then((r) => r.json()),
     ])
       .then(([temaRes, sepRes]) => {
         if (!temaRes.success) {
@@ -56,7 +57,7 @@ export default function TemaPage({
       <Navbar />
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-10 space-y-6">
         <Link
-          href="/wiki"
+          href="/"
           className="inline-flex items-center text-xs text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />

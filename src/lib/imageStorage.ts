@@ -145,7 +145,7 @@ export async function saveUploadedImage(file: File): Promise<{
 
   return {
     filename,
-    url: `/api/uploads/${encodeURIComponent(filename)}`,
+    url: `/wiki/api/uploads/${encodeURIComponent(filename)}`,
     size: buffer.byteLength,
     mimeType: file.type,
     directory: status.directory,
