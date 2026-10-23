@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
   GitBranch,
+  BookOpen,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -81,6 +82,17 @@ export default function Navbar() {
             >
               <Home className="w-3.5 h-3.5 mr-1.5" />
               Inicio
+            </Link>
+            <Link
+              href="/wiki"
+              className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                pathname.startsWith("/wiki")
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-900"
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
+              Wiki
             </Link>
             <Link
               href="/concurrency"
